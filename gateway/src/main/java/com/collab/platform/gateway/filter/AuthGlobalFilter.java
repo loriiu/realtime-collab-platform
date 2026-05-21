@@ -38,9 +38,10 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
             "/user/register"
     );
 
-    /** Prefixes that bypass authentication (e.g. actuator endpoints). */
+    /** Prefixes that bypass authentication (e.g. actuator endpoints, WebSocket). */
     private static final Set<String> WHITELIST_PREFIXES = Set.of(
-            "/actuator"
+            "/actuator",
+            "/ws"
     );
 
     private static final String AUTHORIZATION_HEADER = "Authorization";
