@@ -1,0 +1,20 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: gateway
+  cloud:
+    nacos:
+      discovery:
+        server-addr: localhost:8848
+    gateway:
+      routes:
+        - id: user-service
+          uri: lb://user-service
+          predicates:
+            - Path=/user/**
+
+jwt:
+  secret: a1B2c3D4e5F6g7H8i9J0kL1mN2oP3qR4s5T6uV7wX8yZ9
+  ttl: 7200
