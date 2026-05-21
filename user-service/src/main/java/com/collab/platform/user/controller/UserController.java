@@ -5,6 +5,7 @@ import com.collab.platform.common.core.result.Result;
 import com.collab.platform.common.core.result.ResultCode;
 import com.collab.platform.user.dto.LoginDTO;
 import com.collab.platform.user.dto.RegisterDTO;
+import com.collab.platform.user.dto.UserBriefDTO;
 import com.collab.platform.user.entity.User;
 import com.collab.platform.user.service.UserService;
 import jakarta.validation.Valid;
@@ -14,9 +15,13 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import jakarta.servlet.http.HttpServletRequest;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * User REST controller.
@@ -73,5 +78,25 @@ public class UserController {
         }
         User user = userService.info(userId);
         return Result.success(user);
+    }
+
+    /**
+     * GET /user/batch — batch query user brief info (for message-service Feign).
+     */
+    @GetMapping("/batch")
+    public Result<Map<Long, UserBriefDTO>> batchInfo(@RequestParam("userIds") List<Long> userIds) {
+        Map<Long, UserBriefDTO> map = new HashMap<>();
+        for (Long userId : userIds) {
+            User user = userService.infoOrNull(userId);
+            if (user != null) {
+                UserBriefDTO dto = new UserBriefDTO();
+                dto.setId(user.getId());
+                dto.setUsername(user.getUsername());
+                dto.setNickname(user.getNickname());
+                dto.setAvatar(user.getAvatar());
+                map.put(userId, dto);
+            }
+        }
+        return Result.success(map);
     }
 }

@@ -112,4 +112,16 @@ public class UserService {
         user.setPassword(null);
         return user;
     }
+
+    /**
+     * Retrieve user profile by ID, returning null if not found (no exception).
+     * Used by batch queries where missing users should be silently skipped.
+     */
+    public User infoOrNull(Long userId) {
+        User user = userMapper.selectById(userId);
+        if (user != null) {
+            user.setPassword(null);
+        }
+        return user;
+    }
 }
