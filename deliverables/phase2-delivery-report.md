@@ -2,8 +2,9 @@
 
 > **交付日期**：2026-05-21  
 > **远程仓库**：[loriiu/realtime-collab-platform](https://github.com/loriiu/realtime-collab-platform)  
-> **分支**：master (13 new commits)  
-> **SKILL 版本**：v2.2.0（经双专家审查修正）
+> **分支**：master (14 commits)  
+> **SKILL 版本**：v2.2.0（经双专家审查修正）  
+> **审查状态**：企业指导老师 + 面试官双审通过，P0-P1 修复已落地
 
 ---
 
@@ -257,6 +258,19 @@ ddf8184 feat(entity): add Message/Session entities, DTOs, and MyBatis-Plus mappe
 | 限流 | 无 | 20msg/s per user |
 | 去重 | 无 | Redis SETNX TTL 86400s |
 | 分布式 ID | MyBatis-Plus 默认 | Snowflake + worker-id 注入 |
+
+---
+
+## 交付后专家审查与修复（2026-05-21）
+
+企业指导老师 + 面试官双审发现 4 个问题，P0-P1 已修复落盘：
+
+| # | 问题 | 严重度 | 修复 |
+|---|------|--------|------|
+| 1 | Dedup TTL 86400s → 静默丢消息 | 🔴 Critical | TTL 改 30s + DB 幂等写 (DuplicateKeyException catch) |
+| 2 | 无 Server ACK → 用户不知消息是否发出 | 🟡 Major | ChatWebSocketHandler.sendAck() 入库后直接回 ACK |
+| 3 | Token 在 URL query 中 → 日志泄露 | 🟡 Medium | 写入 docs/pitfalls.md #8，承认 trade-off，给 Phase 3 改进方案 |
+| 4 | Sessions 表缺少设计文档 | 🟢 Minor | 记录待 Phase 3 补充（session_type + session_members） |
 
 ---
 
