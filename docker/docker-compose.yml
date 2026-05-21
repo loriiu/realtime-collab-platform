@@ -1,5 +1,9 @@
 version: '3.8'
 
+networks:
+  collab-net:
+    driver: bridge
+
 services:
   mysql:
     image: mysql:8.0
@@ -19,6 +23,8 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - collab-net
 
   redis:
     image: redis:7-alpine
@@ -31,6 +37,8 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - collab-net
 
   nacos:
     image: nacos/nacos-server:v2.2.3
@@ -52,6 +60,39 @@ services:
     depends_on:
       mysql:
         condition: service_healthy
+    networks:
+      - collab-net
+
+  message-service-1:
+    build: ../message-service
+    ports:
+      - "8082:8082"
+    environment:
+      - SNOWFLAKE_WORKER_ID=1
+      - SERVER_ID=msg-1
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    networks:
+      - collab-net
+
+  message-service-2:
+    build: ../message-service
+    ports:
+      - "8083:8082"
+    environment:
+      - SNOWFLAKE_WORKER_ID=2
+      - SERVER_ID=msg-2
+      - SERVER_PORT=8083
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    networks:
+      - collab-net
 
 volumes:
   mysql-data:
