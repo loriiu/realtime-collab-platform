@@ -1,8 +1,10 @@
 package com.collab.platform.message.ws;
 
 import com.collab.platform.message.broker.MessageBroker;
+import com.collab.platform.message.dto.DomainEventDTO;
 import com.collab.platform.message.dto.SendMessageDTO;
 import com.collab.platform.message.dto.WsMessageDTO;
+import com.collab.platform.message.event.DomainEventPublisher;
 import com.collab.platform.message.redis.MessageRateLimiter;
 import com.collab.platform.message.service.MessageService;
 import com.collab.platform.message.service.OnlineService;
@@ -18,7 +20,8 @@ import org.springframework.web.socket.handler.TextWebSocketHandler;
 /**
  * Core WebSocket handler for real-time chat messaging.
  *
- * <p>Lifecycle: connect → authenticate → rate-limit → persist → dispatch → broadcast.</p>
+ * <p>Lifecycle: connect → authenticate → rate-limit → persist → dispatch → broadcast
+ * → publish domain event.</p>
  */
 @Component
 public class ChatWebSocketHandler extends TextWebSocketHandler {
@@ -33,19 +36,22 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
     private final MessageService messageService;
     private final MessageRateLimiter messageRateLimiter;
     private final MessageBroker messageBroker;
+    private final DomainEventPublisher domainEventPublisher;
 
     public ChatWebSocketHandler(WsSessionManager wsSessionManager,
                                 WsMessageDispatcher wsMessageDispatcher,
                                 OnlineService onlineService,
                                 MessageService messageService,
                                 MessageRateLimiter messageRateLimiter,
-                                MessageBroker messageBroker) {
+                                MessageBroker messageBroker,
+                                DomainEventPublisher domainEventPublisher) {
         this.wsSessionManager = wsSessionManager;
         this.wsMessageDispatcher = wsMessageDispatcher;
         this.onlineService = onlineService;
         this.messageService = messageService;
         this.messageRateLimiter = messageRateLimiter;
         this.messageBroker = messageBroker;
+        this.domainEventPublisher = domainEventPublisher;
     }
 
     @Override
@@ -108,6 +114,10 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
 
         // --- Server ACK: confirm message persisted to sender ---
         sendAck(session, wsMessage.getMessageId(), 0);
+
+        // --- publish message.sent event to RabbitMQ (after persist + ACK) ---
+        domainEventPublisher.publishMessageSent(
+                DomainEventDTO.fromMessage(wsMessage, messageService.getServerId()));
 
         // --- dispatch: try local session first ---
         wsMessageDispatcher.dispatch(wsMessage);

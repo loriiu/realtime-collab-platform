@@ -13,6 +13,7 @@ import com.collab.platform.message.mapper.MessageMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 
@@ -38,6 +39,9 @@ public class MessageService {
     private final UserFeignClient userFeignClient;
     private final ExecutorService messagePersistenceExecutor;
 
+    @Value("${server-id:msg-1}")
+    private String serverId;
+
     public MessageService(MessageMapper messageMapper,
                           Snowflake snowflake,
                           UserFeignClient userFeignClient,
@@ -46,6 +50,15 @@ public class MessageService {
         this.snowflake = snowflake;
         this.userFeignClient = userFeignClient;
         this.messagePersistenceExecutor = messagePersistenceExecutor;
+    }
+
+    /**
+     * Return the server instance identifier.
+     *
+     * @return server ID (e.g. "msg-1", "msg-2")
+     */
+    public String getServerId() {
+        return serverId;
     }
 
     /**
