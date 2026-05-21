@@ -106,6 +106,9 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
         final Long finalSenderId = senderId;
         WsMessageDTO wsMessage = messageService.sendMessage(sendDto, finalSenderId);
 
+        // --- Server ACK: confirm message persisted to sender ---
+        sendAck(session, wsMessage.getMessageId(), 0);
+
         // --- dispatch: try local session first ---
         wsMessageDispatcher.dispatch(wsMessage);
 
@@ -139,6 +142,15 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
             session.sendMessage(new TextMessage(OBJECT_MAPPER.writeValueAsString(errorMsg)));
         } catch (Exception e) {
             log.error("Failed to send error message", e);
+        }
+    }
+
+    private void sendAck(WebSocketSession session, Long messageId, int status) {
+        try {
+            WsMessageDTO ack = WsMessageDTO.ack(messageId, status);
+            session.sendMessage(new TextMessage(OBJECT_MAPPER.writeValueAsString(ack)));
+        } catch (Exception e) {
+            log.error("Failed to send ACK for messageId={}", messageId, e);
         }
     }
 }

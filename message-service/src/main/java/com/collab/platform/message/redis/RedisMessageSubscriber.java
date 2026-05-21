@@ -51,7 +51,7 @@ public class RedisMessageSubscriber implements MessageListener {
         // --- dedup check using SET NX EX ---
         String dedupKey = RedisKeyManager.DEDUP_PREFIX + wsMessage.getMessageId();
         Boolean isNew = stringRedisTemplate.opsForValue()
-                .setIfAbsent(dedupKey, "1", 86400, TimeUnit.SECONDS);
+                .setIfAbsent(dedupKey, "1", 30, TimeUnit.SECONDS);
         if (Boolean.FALSE.equals(isNew)) {
             log.debug("Duplicate message ignored: messageId={}", wsMessage.getMessageId());
             return;

@@ -52,3 +52,25 @@
 **坑**：Lombok `@Data` 不会设置字段默认值。在 Java 中，类字段的默认值（如 `private String type = "TEXT"`）需要在字段声明时赋值。
 
 **解决**：在 `MessageService.sendMessage()` 中显式设置默认值，不依赖实体类的默认值。
+
+## 8. WebSocket Token 在 URL query 中的安全风险
+
+**坑**：浏览器 `WebSocket` API 无法设置自定义 HTTP Header，因此 JWT token 只能通过 URL query parameter 传递（`ws://host/ws?token=xxx`）。这导致 token 明文出现在以下位置：
+- Nginx / Gateway access log（默认记录完整 URI 包括 query string）
+- 浏览器地址栏和 history
+- 日志平台（ELK / Splunk / 阿里云 SLS）
+- Referer 头（如果页面有 `<img>` 等资源请求）
+
+**当前阶段（Phase 2）**：
+- 这是权衡后的选择——浏览器 API 限制 + 学生项目复杂度约束
+- 至少使用了 JWT + HandshakeInterceptor 校验（比裸奔强）
+- 如果面试被追问，可以明确说出这个 trade-off，展示安全意识
+
+**生产环境改进方案（Phase 3+）**：
+| 方案 | 做法 | 适用 |
+|------|------|------|
+| Cookie-based | `Set-Cookie: ws_token=xxx; HttpOnly; Secure; SameSite=Strict`，WebSocket 连接自动携带 | Web 端最优方案 |
+| Short-lived ticket | POST /ws/ticket 用 token 换 30s 有效的一次性 ticket，`ws://host/ws?ticket=xxx` | 非 Web 端（App/小程序） |
+| First-message auth | WebSocket 先匿名连接，第一条消息发 `{type:"auth", token:"xxx"}` | 最安全但实现复杂度高 |
+
+**参考**：OWASP 明确将 "Bearer token in URL" 列为反模式。

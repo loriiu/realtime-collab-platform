@@ -13,6 +13,7 @@ import com.collab.platform.message.mapper.MessageMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -76,6 +77,8 @@ public class MessageService {
             try {
                 messageMapper.insert(message);
                 log.debug("Message persisted: id={}", messageId);
+            } catch (DuplicateKeyException e) {
+                log.debug("Duplicate message insert (idempotent), id={}", messageId);
             } catch (Exception e) {
                 log.error("Failed to persist message id={}", messageId, e);
             }
