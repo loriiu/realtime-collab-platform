@@ -17,6 +17,10 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.InputStream;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
@@ -190,6 +194,26 @@ public class FileService {
                         .eq(FileRecord::getIsDeleted, 0)
                         .orderByDesc(FileRecord::getCreateTime)
         );
+    }
+
+    /**
+     * Batch generate pre-signed URLs for multiple files.
+     * Use this to avoid N concurrent requests when loading many file URLs at once.
+     *
+     * @param fileIds list of file UUIDs
+     * @return map of fileId → pre-signed URL (missing/deleted files are omitted)
+     */
+    public Map<String, String> batchGetPreSignedUrls(List<String> fileIds) {
+        Map<String, String> result = new HashMap<>();
+        for (String fileId : fileIds) {
+            try {
+                String url = getPreSignedUrl(fileId);
+                result.put(fileId, url);
+            } catch (Exception e) {
+                log.warn("Skipping fileId={} in batch URL generation: {}", fileId, e.getMessage());
+            }
+        }
+        return result;
     }
 
     /**

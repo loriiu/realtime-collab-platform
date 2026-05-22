@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -119,5 +120,19 @@ public class FileController {
         data.put("page", result.getCurrent());
         data.put("size", result.getSize());
         return Result.success(data);
+    }
+
+    /**
+     * Batch generate pre-signed URLs for multiple files.
+     * Avoids N concurrent requests when loading a chat history with many file messages.
+     */
+    @PostMapping("/urls")
+    public Result<Map<String, String>> batchGetUrls(@RequestBody Map<String, List<String>> body) {
+        List<String> fileIds = body.get("fileIds");
+        if (fileIds == null || fileIds.isEmpty()) {
+            return Result.fail(400, "fileIds 不能为空");
+        }
+        Map<String, String> urls = fileService.batchGetPreSignedUrls(fileIds);
+        return Result.success(urls);
     }
 }
