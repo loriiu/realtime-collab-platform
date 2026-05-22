@@ -13,6 +13,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -20,7 +22,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 /**
  * Session REST controller — provides session list, message history, offline messages, and online status.
@@ -88,5 +89,31 @@ public class SessionController {
     public Result<Map<Long, Boolean>> getOnlineUsers(@RequestParam List<Long> userIds) {
         Map<Long, Boolean> statusMap = onlineService.batchCheckOnline(userIds);
         return Result.success(statusMap);
+    }
+
+    /**
+     * POST /session/create — get or create a session with the target user.
+     * Idempotent: returns existing session if one already exists.
+     *
+     * @param userId the authenticated user ID (from gateway header)
+     * @param body   request body with targetUserId
+     * @return the session (existing or newly created)
+     */
+    @PostMapping("/create")
+    public Result<Session> createSession(
+            @RequestHeader("X-User-Id") Long userId,
+            @RequestBody Map<String, Long> body) {
+        if (userId == null) {
+            throw new BizException(ResultCode.UNAUTHORIZED.getCode(), "缺少认证信息");
+        }
+        Long targetUserId = body.get("targetUserId");
+        if (targetUserId == null) {
+            throw new BizException(ResultCode.BAD_REQUEST.getCode(), "缺少 targetUserId");
+        }
+        if (userId.equals(targetUserId)) {
+            throw new BizException(ResultCode.BAD_REQUEST.getCode(), "不能给自己创建会话");
+        }
+        Session session = sessionService.getOrCreateSession(userId, targetUserId);
+        return Result.success(session);
     }
 }
