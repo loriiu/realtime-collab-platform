@@ -1,6 +1,8 @@
 package com.collab.platform.file.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.collab.platform.file.entity.FileRecord;
 import com.collab.platform.file.mapper.FileRecordMapper;
 import io.minio.GetPresignedObjectUrlArgs;
@@ -169,6 +171,24 @@ public class FileService {
                 new LambdaQueryWrapper<FileRecord>()
                         .eq(FileRecord::getFileId, fileId)
                         .eq(FileRecord::getIsDeleted, 0)
+        );
+    }
+
+    /**
+     * List files uploaded by a specific user, with pagination.
+     *
+     * @param uploaderId the user ID
+     * @param page       1-based page number
+     * @param size       page size (default 20, max 50)
+     * @return paginated file records (is_deleted=0, ordered by create_time DESC)
+     */
+    public IPage<FileRecord> listByUploader(Long uploaderId, int page, int size) {
+        Page<FileRecord> pageObj = new Page<>(page, Math.min(size, 50));
+        return fileRecordMapper.selectPage(pageObj,
+                new LambdaQueryWrapper<FileRecord>()
+                        .eq(FileRecord::getUploaderId, uploaderId)
+                        .eq(FileRecord::getIsDeleted, 0)
+                        .orderByDesc(FileRecord::getCreateTime)
         );
     }
 
